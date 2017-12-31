@@ -1,0 +1,2 @@
+# autodebian7
+เทส
