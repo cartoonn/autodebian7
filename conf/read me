@@ -1,0 +1,15 @@
+** Installer SETUP DEBIAN **
+ -```
+wget https://raw.githubusercontent.com/cartoonn/autodebian7/master/Debian7.sh
+chmod +x Debian7.sh
+bash Debian7.sh
+ -```
+ -** Installer SETUP OCS **
+ -```
+wget https://raw.githubusercontent.com/cartoonn/autodebian7/master/OCS-Panel.sh
+chmod +x OCS-Panel.sh
+bash OCS-Panel.sh
+ -# MYSQL WILL REQUEST TO ENTER A PASSWORD
+ -# CREATE DATABASE IF NOT EXISTS OCS_PANEL; EXIT; 
+ -# GOTO IP:81 THEN FILLUP AND INSTALL
+
