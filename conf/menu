@@ -1,0 +1,590 @@
+#!/bin/bash
+clear                    	        
+function create_user() {
+echo -e "[Fill-up the field]"
+read -p "Username : " Login
+read -p "Password : " Pass
+read -p "Expired (Days): " Date
+
+IP=`dig +short myip.opendns.com @resolver1.opendns.com`
+useradd -e `date -d "$Date days" +"%Y-%m-%d"` -s /bin/false -M $Login
+exp="$(chage -l $Login | grep "Account expires" | awk -F": " '{print $2}')"
+echo -e "$Pass\n$Pass\n"|passwd $Login &> /dev/null
+echo -e ""
+echo -e "======ข้อมูลเกี่ยวกับบัญชี======"
+echo -e "ชื่อผู้ใช้: $Login "
+echo -e "รหัสผ่าน: $Pass"
+echo -e "-------------------------------"
+echo -e "วันหมดอายุ: $exp"
+echo -e "==============================="
+echo -e "Modified by THIRD"
+echo -e "พิมพ์ (menu) เพื่อกลับไปที่เมนู."
+echo -e ""
+	}
+function create_ss() {
+
+	nano /etc/shadowsocks.json
+	echo -e "แก้ไขบัญชี Shadowsocks Clients ของคุณเรียบร้อยแล้ว"
+	echo -e ""
+	echo -e ""
+	
+	clear
+	echo "Shadowsocks จะรีสตาร์ทเพื่อเริ่มต้นพอร์ตที่เพิ่มใหม่." 
+	echo "Connecting to..."
+	sleep 0.5
+	echo "Shadowsocks กำลังเริ่มต้นใหม่..."
+	sleep 0.5
+	
+	/etc/init.d/shadowsocks restart
+	echo -e "พิมพ์ [menu] เพื่อกลับไปที่เมนู."
+	}
+function restart_ss() {
+	 /etc/init.d/shadowsocks restart
+	echo -e "รีเซ็ตบัญชี Shadowsocks Clients เรียบร้อยแล้ว"
+		
+	echo -e "พิมพ์ [menu] เพื่อกลับไปที่เมนู."
+	}
+function Addlimit_ss() {
+	echo -e "ขีด จำกัด แบนด์วิดท์สำหรับพอร์ตที่เพิ่มในปัจจุบัน"
+	read -p "Enter the Port: " port
+	read -p "Enter the [ 10000000000 (10GB-10ZERO) OR 1000000000000 (1tb-12ZERO) ]limit: " limit
+	sudo iptables -I OUTPUT -p tcp --sport $port -j DROP
+	sudo iptables -I OUTPUT -p tcp --sport $port -m quota --quota $limit -j ACCEPT
+	echo -e "เพิ่มขีด จำกัด พอร์ตเรียบร้อยแล้ว: $port"
+	
+	echo -e "พิมพ์ [menu] เพื่อกลับไปที่เมนู."
+	}
+function limit_ss() {
+	sudo iptables -nvL -t filter --line-numbers
+	echo -e "พิมพ์ [menu] เพื่อกลับไปที่เมนู."
+	}
+function removeportlimit_ss() {
+	sudo iptables -nvL -t filter --line-numbers
+	read -p "Enter the Chain num: " chain
+	sudo iptables -D OUTPUT $chain
+	sudo iptables -D OUTPUT $chain
+	echo -e "นำหมายเลข chain ออกเรียบร้อยแล้ว: $ห่วงโซ่และลบขีด จำกัด ไปยังพอร์ต." 
+	echo -e "พิมพ์ [menu] เพื่อกลับไปที่เมนู."
+	}
+function change_user_pass() {
+read -p "ป้อนชื่อผู้ใช้ที่เปลี่ยน รหัสผ่าน: " username
+egrep "^$username" /etc/passwd >/dev/null
+if [ $? -eq 0 ]; then
+read -p "ป้อนรหัสผ่านใหม่สำหรับผู้ใช้ $username: " password
+
+clear
+echo "Connecting to..."
+sleep 0.5
+echo "เปลี่ยนรหัสผ่าน..."
+sleep 0.5
+  egrep "^$ชื่อผู้ใช้" /etc/passwd >/dev/null
+  echo -e "$รหัสผ่าน\n$password" | passwd $username
+  clear
+  echo " "
+  echo "---------------------------------------"
+  echo -e "รหัสผ่านสำหรับผู้ใช้ ${blue}$username${NC} ได้รับการแทนที่เรียบร้อยแล้ว."
+  echo -e "รหัสผ่านสำหรับผู้ใช้ใหม่ ${blue}$username${NC} is ${red}$password${NC}"
+  echo "--------------------------------------"
+  echo " "
+
+else
+echo -e "ชื่อผู้ใช้ ${red}$ชื่อผู้ใช้${NC} ไม่พบใน VPS ของคุณ"
+exit 0
+fi
+echo -e "ขอขอบคุณ! โปรดพิมพ์ "[menu]" เพื่อย้อนกลับ."
+	}
+
+function lock_account() {
+	
+	echo -e "$ยกเลิกการล็อกบัญชีผู้ใช้แล้ว"
+	usermod -L $uname
+	echo -e "ขอขอบคุณ! โปรดพิมพ์ "[menu]" เพื่อย้อนกลับ."
+	}
+
+function unlock_account() {
+	
+	echo -e "$มีการปลดล็อกบัญชีผู้ใช้แล้ว"
+	usermod -U $uname
+	echo - "ขอขอบคุณ! โปรดพิมพ์ "[menu]" เพื่อย้อนกลับ."
+	}
+	
+function generate_trial() {
+#IP=`dig +short myip.opendns.com @resolver1.opendns.com`
+uname=trial`</dev/urandom tr -dc X-Z0-9 | head -c4`
+hari="1"
+pass=`</dev/urandom tr -dc a-f0-9 | head -c9`
+
+useradd -e `date -d "$hari days" +"%Y-%m-%d"` -s /bin/false -M $uname
+echo -e "$pass\n$pass\n"|passwd $uname &> /dev/null
+echo -e ""
+echo -e "====ข้อมูลบัญชีทดลองใช้.===="
+echo -e "ชื่อผู้ใช้: $uname"
+echo -e "รหัสผ่าน: $pass\n"
+echo -e "==========================="
+echo -e ""
+echo -e "พิมพ์ (menu) เพื่อย้อนกลับ."
+echo -e ""
+}
+function renew_user() {
+	
+	echo "วันหมดอายุใหม่สำหรับ $uname: $expdate...";
+	usermod -e $expdate $uname
+	echo "ขอขอบคุณ! โปรดพิมพ์ "[menu]" เพื่อย้อนกลับ."
+}
+function check_ssh_user(){
+
+data=( `ps aux | grep -i dropbear | awk '{print $2}'`);
+
+echo "-----------------------";
+echo "กำลังตรวจสอบการเข้าสู่ระบบ Dropbear";
+echo "-----------------------";
+
+for PID in "${data[@]}"
+do
+	#echo "ตรวจสอบ $PID";
+	NUM=`cat /var/log/auth.log | grep -i dropbear | grep -i "การยืนยันรหัสผ่านประสบความสำเร็จ" | grep "dropbear\[$PID\]" | wc -l`;
+	USER=`cat /var/log/auth.log | grep -i dropbear | grep -i "การยืนยันรหัสผ่านประสบความสำเร็จ" | grep "dropbear\[$PID\]" | awk '{print $10}'`;
+	IP=`cat /var/log/auth.log | grep -i dropbear | grep -i "การยืนยันรหัสผ่านประสบความสำเร็จ" | grep "dropbear\[$PID\]" | awk '{print $12}'`;
+	if [ $NUM -eq 1 ]; then
+		echo "$PID - $USER - $IP";
+	fi
+done
+
+echo "";
+
+data=( `ps aux | grep "\[priv\]" | sort -k 72 | awk '{print $2}'`);
+
+echo "----------------------";
+echo "กำลังตรวจสอบการเข้าสู่ระบบ OpenSSH";
+echo "----------------------";
+
+for PID in "${data[@]}"
+do
+        #echo "check $PID";
+	NUM=`cat /var/log/auth.log | grep -i sshd | grep -i "Accepted password for" | grep "sshd\[$PID\]" | wc -l`;
+	USER=`cat /var/log/auth.log | grep -i sshd | grep -i "Accepted password for" | grep "sshd\[$PID\]" | awk '{print $9}'`;
+	IP=`cat /var/log/auth.log | grep -i sshd | grep -i "Accepted password for" | grep "sshd\[$PID\]" | awk '{print $11}'`;
+        if [ $NUM -eq 1 ]; then
+                echo "$PID - $USER - $IP";
+        fi
+done
+
+echo "";
+
+echo "------------------------------------------------"
+echo " Multi Login = Kill "
+echo " Usurname : Kill number PID "
+echo "------------------------------------------------"
+
+echo "";
+echo -e "พิมพ์ [menu] เพื่อกลับไปที่เมนู OPTION."
+echo "Modified by THIRD";
+
+}
+function delete_user(){
+	userdel $uname
+	
+	echo "$ลบชื่อผู้ใช้เรียบร้อยแล้ว"
+	echo "ขอขอบคุณ! โปรดพิมพ์ "[menu]" เพื่อย้อนกลับ."
+}
+
+function expired_users(){
+
+	echo -e "ชื่อผู้ใช้หมดอายุแล้ว:"
+	cat /etc/shadow | cut -d: -f1,8 | sed /:$/d > /tmp/expirelist.txt
+	totalaccounts=`cat /tmp/expirelist.txt | wc -l`
+	for((i=1; i<=$totalaccounts; i++ )); do
+		tuserval=`head -n $i /tmp/expirelist.txt | tail -n 1`
+		username=`echo $tuserval | cut -f1 -d:`
+		userexp=`echo $tuserval | cut -f2 -d:`
+		userexpireinseconds=$(( $userexp * 86400 ))
+		todaystime=`date +%s`
+		if [ $userexpireinseconds -lt $todaystime ] ; then
+			echo $username
+		fi
+	done
+	rm /tmp/expirelist.txt
+	
+	echo ""
+	echo "ขอขอบคุณ! โปรดพิมพ์ "[menu]" เพื่อย้อนกลับ."
+}
+
+function not_expired_users(){
+	echo -e "ชื่อผู้ใช้ไม่หมดอายุ:"
+    cat /etc/shadow | cut -d: -f1,8 | sed /:$/d > /tmp/expirelist.txt
+    totalaccounts=`cat /tmp/expirelist.txt | wc -l`
+    for((i=1; i<=$totalaccounts; i++ )); do
+        tuserval=`head -n $i /tmp/expirelist.txt | tail -n 1`
+        username=`echo $tuserval | cut -f1 -d:`
+        userexp=`echo $tuserval | cut -f2 -d:`
+        userexpireinseconds=$(( $userexp * 86400 ))
+        todaystime=`date +%s`
+        if [ $userexpireinseconds -gt $todaystime ] ; then
+            echo $username
+        fi
+    done
+    	echo ""
+	echo "ขอขอบคุณ! โปรดพิมพ์ "[menu]" เพื่อย้อนกลับ."
+	rm /tmp/expirelist.txt
+		
+}
+function Auto_reboot(){
+#!/bin/bash
+if [ ! -e /usr/local/bin/reboot_otomatis ]; then
+echo '#!/bin/bash' > /usr/local/bin/reboot_otomatis 
+echo 'date=$(date +"%m-%d-%Y")' >> /usr/local/bin/reboot_otomatis 
+echo 'time=$(date +"%T")' >> /usr/local/bin/reboot_otomatis 
+echo 'echo "เซิร์ฟเวอร์ได้บูตเครื่องเรียบร้อยแล้ว $date at $time." >> /root/log-reboot.txt' >> /usr/local/bin/reboot_otomatis 
+echo '/sbin/shutdown -r now' >> /usr/local/bin/reboot_otomatis 
+chmod +x /usr/local/bin/reboot_otomatis
+fi
+
+echo "-------------------------------------------"
+echo "เมนูระบบรีบูตอัตโนมัติ"
+echo "-------------------------------------------"
+echo "1. ตั้งค่าการรีบูตอัตโนมัติ 1 ชั่วโมงครั้ง"
+echo "2. ตั้งค่าการรีบูตอัตโนมัติ 6 ชั่วโมงครั้ง"
+echo "3. ตั้งค่าการรีบูตอัตโนมัติ 12 ชั่วโมงครั้ง"
+echo "4. ตั้งค่าการรีบูตอัตโนมัติวันละครั้ง"
+echo "5. ตั้งค่าการรีบูตอัตโนมัติสัปดาห์ละครั้ง"
+echo "6. ตั้งค่าการรีบูตอัตโนมัติทุกเดือน"
+echo "7. ปิดการรีบูตอัตโนมัติ"
+echo "8. ดูรีบูตเข้าสู่ระบบ"
+echo "9. รีบูตระบบใหม่"
+echo "-------------------------------------------"
+read -p "เขียนตัวเลือก (ตัวเลข):" x
+
+if test $x -eq 1; then
+echo "10 * * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo "การรีบูตอัตโนมัติได้รับการตั้งค่าเรียบร้อยแล้วทุกๆหนึ่งชั่วโมง."
+elif test $x -eq 2; then
+echo "10 */6 * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo "การรีบูตอัตโนมัติได้รับการตั้งค่าเรียบร้อยแล้ว 6 ชั่วโมง."
+elif test $x -eq 3; then
+echo "10 */12 * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo "การรีบูตอัตโนมัติได้รับการตั้งค่าเรียบร้อยแล้ว 12 ชั่วโมง."
+elif test $x -eq 4; then
+echo "10 0 * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo "การรีบูตอัตโนมัติได้รับการตั้งค่าเรียบร้อยแล้วทุกๆวัน."
+elif test $x -eq 5; then
+echo "10 0 */7 * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo "การรีบูตอัตโนมัติได้รับการตั้งค่าเรียบร้อยแล้วสัปดาห์ละครั้ง."
+elif test $x -eq 6; then
+echo "10 0 1 * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo "การรีบูตอัตโนมัติได้รับการตั้งค่าเรียบร้อยแล้วเดือนละครั้ง."
+elif test $x -eq 7; then
+rm -f /etc/cron.d/reboot_otomatis
+echo "ปิดใช้งานการรีบูตอัตโนมัติแล้ว."
+elif test $x -eq 8; then
+if [ ! -e /root/log-reboot.txt ]; then
+	echo "ยังไม่พบกิจกรรมรีบูต"
+	else 
+	echo 'LOG REBOOT'
+	echo "-------"
+	cat /root/log-reboot.txt
+fi
+elif test $x -eq 9; then
+echo "" > /root/log-reboot.txt
+echo "บันทึกการรีบูตอัตโนมัติถูกลบแล้ว!"
+else
+echo "ไม่มีตัวเลือกในเมนู."
+exit
+fi
+
+echo -e "ขอขอบคุณ! โปรดพิมพ์ "[menu]" เพื่อย้อนกลับ!."
+}
+function used_data(){
+	echo -e ""
+	echo -e "การใช้ข้อมูลทั้งหมด:"
+
+	myip=`ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0' | head -n1`
+	myint=`ifconfig | grep -B1 "inet addr:$myip" | head -n1 | awk '{print $1}'`
+	ifconfig $myint | grep "RX bytes" | sed -e 's/ *RX [a-z:0-9]*/Received: /g' | sed -e 's/TX [a-z:0-9]*/\nTransfered: /g'
+	
+	echo ""
+	echo "ขอขอบคุณ! โปรดพิมพ์ "[menu]" เพื่อย้อนกลับ."
+}
+
+clear
+sleep 0.5
+echo "Connecting..."
+sleep 0.5
+screenfetch
+echo "[--------------------oOo(^_~)oOo--------------------]"
+echo "[----------ยินดีต้อนรับ THIRD Autoscript --------]"
+echo "[---------Contact: http://line.me/ti/p/4bvwOIMft8 ---------------]"
+echo "[Menu]"
+PS3='โปรดป้อนหมายเลขที่คุณเลือก [1-23]: '
+options=("Shadowsock How to?"	
+	 "เพิ่ม / แก้ไขบัญชี Shadowsocks" 
+	 "ดูขีด จำกัด shadowsocks ต่อพอร์ต"
+	 "เพิ่มขีด จำกัด ในพอร์ต Shadowsocks"
+	 "ลบขีด จำกัด บนพอร์ต Shadowsocks"
+	 "Restart Shadowsocks configuration" 
+	 "เพิ่มบัญชี OVPN"
+	 "สร้างบัญชีทดลองใช้สำหรับ OVPN"
+	 "รายชื่อผู้ใช้ OVPN" 
+	 "เปลี่ยนรหัสผ่าน OVPN" 
+	 "ล็อคบัญชี OVPN" 
+	 "ปลดล็อกบัญชี OVPN" 
+	 "ตรวจสอบรายชื่อผู้ใช้ ssh OVPN" 
+	 "Renew User for OVPN" 
+	 "Delete User for OVPN" 
+	 "Ram Status for OVPN" 
+	 "Speedtest" 
+	 "รีเฟรช Squid" 
+	 "ผู้ใช้ไม่หมดอายุ OVPN"  
+	 "ผู้ใช้หมดอายุ OVPN" 
+	 "รีบูตอัตโนมัติ"
+	 "Used Data By Users" 
+	 "Quit")
+select opt in "${options[@]}"
+do
+    case $opt in
+        
+	 "Shadowsock How to?")
+clear
+echo -e ""
+echo -e ""
+echo -e ""
+echo -e ""
+echo "Connecting to..."
+sleep 0.5
+echo "Shadowsocks GUIDElines..."
+sleep 0.5
+echo -e "SHADOWSOCKS ACCOUNT HOW TO?"
+echo -e ""
+                echo -e "อย่าลบข้อความเพียงแก้ไขรหัสผ่าน"
+
+echo -e ""
+echo -e "เป็นบริการของคุณเพื่อเป็นลูกค้า."
+echo -e "[IP]                   [PASS]            [PORT]         [ENCRYPTION MODE]"
+echo -e "[139.XX.XX.XX]  [EDITMOTOPASWORD]     [9000-9015]     [AES-256-CFB,ORIGIN,PLAIN]"
+echo -e ""
+echo -e "1) WAG MO NA GALAWIN YANG MGA NAKIKITA MO SA JSON FOLDER "PASSWORD" LANG ANG EDIT MO WALA NG IBA."
+echo -e ""
+echo -e "2) PAG KATAPOS MO EDIT ANG PASSWORD CHECK MO YUNG KATAPAT NA PORT YUNG ANG KASAMANYA."
+echo -e ""
+echo -e "3) THEN GAWIN MO YUNG COMMAND "1" PARA MA-SAVE ANG GINAWA MO."
+echo -e ""
+echo -e "4) PARA MAKITA MO YUNG ILALIM PRESS MO LANG ARROW KEY TO MOVE UP-DOWN-LEFT-RIGHT"
+echo -e ""
+echo -e "5) YANG KULAY YELLOW GREEN ANG ARROW MO PARA MAKA PAG TYPE KA AT MA EDIT MO YUNG MGA TEXT."
+echo -e ""
+echo -e "6) PRESS DELETE TO REMOVE TEXT TAPAT MO YUNG ARROW KEY DOON SA TEXT NA EDIT MO."
+echo -e ""
+echo -e "7) PALITAN MO LANG YUNG PASSWORD QUOTED "editmoitopassword" dont remove the QUOTE."
+echo -e ""
+echo -e "8) PAG KA EXIT TYPE KA ULIT menu THEN PRESS 4 TO RESTART AND SHADOWSOCKS ACCOUNT WILL START CORRECTLY."
+echo -e ""
+echo -e "9) SA EXPIRATION MANUAL MO LISTA SA EXCEL OR NOTEPAD HINDI TO AUTOMATIC NA MERON EXPIRATION."
+echo -e ""
+echo -e "10)PAG EXPIRED NA ACCOUNT NG SHADOWSOCK CHANGE PASSWORD MO LANG."
+
+echo -e ""
+echo -e "*************shadowsocksjson folder COMMAND**************"
+echo -e  "เลื่อนปุ่มลูกศรเพื่อแก้ไขข้อความ [ขึ้น - ลง - ซ้ายขวา]"
+echo -e "คำสั่งที่ 1 เพื่อออกจาก [ctrl + x] แล้วกด "Y" และกด Enter"
+echo -e ""
+echo -e "เมื่อต้องการเริ่มแก้ไข, เพิ่ม, สร้างรหัสผ่านของพอร์ตใน shadowsocks เลือกหมายเลข 3. เพิ่มบัญชี SS ที่เมนูตัวเลือก." 
+echo -e ""
+echo -e "*วิธีการใช้บัญชี shadowsocks?"
+echo -e "-ป้อนข้อมูลต่อไปนี้ [IP-PASS-PORT-ENCRYPTION METHOD] ไปที่ APP SSCAP สำหรับ PC, POSTERN APK สำหรับ Android, waterdrop สำหรับ IOS"
+echo -e "*Shadowsocks นี้จำเป็นต้องโปรโมตเพื่อเชื่อมต่อหรือไม่?"
+echo -e "-NO!.. "
+echo -e "*วิธีเชื่อมต่อ ?"
+echo -e "Use CDC trick-Off/on modem or data-restarting phone or modem-airplain modem off/on"
+echo -e "Kung meron kang atleast 2-3 SIM card use it alternately"
+echo -e "Pahirapan na kasi sa pag connect." 
+echo -e "PS. Alway use GLOBE OR TM SIM 4G only network! do not Recommend to 3G user."
+echo -e ""
+echo -e "Youtube TUT for sscap for pc link. https://youtu.be/p0pKxA520Hg credit to. AkosiShukimayi"
+echo -e "Youtube TUT for postern android link. https://youtu.be/zsSWsZ9UwQg credit to. Ragside "
+echo -e "Youtube TUT for waterdrop  IOS link. https://youtu.be/zSLb3qKetts credit to. VPN Philippines"
+echo -e ""
+
+
+echo "ขอขอบคุณ! โปรดพิมพ์ "[menu]" เพื่อย้อนกลับ."
+	    break
+            ;;
+	"เพิ่ม / แก้ไขบัญชี Shadowsocks")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+            create_ss
+	    break
+            ;;
+	"ดูขีด จำกัด shadowsocks ต่อพอร์ต")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+	    limit_ss
+	    break
+	     ;;
+	"เพิ่มขีด จำกัด ในพอร์ต Shadowsocks")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5	
+	    Addlimit_ss
+	    break
+            ;;
+	"ลบขีด จำกัด บนพอร์ต Shadowsocks")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+	    removeportlimit_ss
+	    break
+            ;;
+	"ตั้งค่า Shadowsocks ใหม่")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+	    restart_ss
+	    break
+            ;;
+	"เพิ่มบัญชี OVPN")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+            create_user
+	    break
+            ;;
+        "สร้างบัญชีทดลองใช้สำหรับ OVPN")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+	      generate_trial
+	      break
+	      ;;   
+    	"รายการผู้ใช้สำหรับ OVPN")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+            /root/status
+            break
+	    ;;	
+	"ปลี่ยนรหัสผ่านสำหรับ OVPN")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+             /root/status
+	    change_user_pass
+	    break
+            ;;
+	"ล็อกบัญชี OVPN")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+	    /root/status
+	    read -p "ชื่อผู้ใช้ที่คุณต้องการล็อค ?: " uname
+	    lock_account
+	    break
+            ;;
+	"unlock account for OVPN")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+	    /root/status
+	    read -p "What username you want unLock ?: " uname
+            unlock_account
+	    break
+            ;;
+        "Renew User for OVPN")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+            read -p "ป้อนชื่อผู้ใช้ที่จะต่ออายุ: " uname
+            read -p "ป้อนวันที่หมดอายุ (YYYY-MM-DD): " expdate
+            renew_user
+            break
+            ;;
+        "ลบผู้ใช้สำหรับ OVPN")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+	    /root/status
+            read -p "ป้อนชื่อผู้ใช้ที่จะนำออก: " uname
+            delete_user
+            break
+            ;;		
+		
+	"ตรวจสอบรายชื่อผู้ใช้ ssh สำหรับ OVPN")
+		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+           check_ssh_user
+            break
+            ;;	
+	"Ram Status for OVPN")
+			clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+		    free -h | grep -v + > /tmp/ramcache
+            cat /tmp/ramcache | grep -v "Swap"
+            break
+            ;;	
+	"Speedtest")
+			clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+			./speedtest --share
+			break
+			;;
+	"Refresh Squid")
+			clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+			./refresh
+			break
+			;;
+	"Users Not Expired for OVPN")
+			clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+			not_expired_users
+			break
+			;;
+	 "Expired Users for OVPN")
+	 		clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+			expired_users
+			break
+			;;
+	"Auto reboot")
+			clear
+			sleep 0.5
+			echo "connecting..."
+			sleep 0.5
+			Auto_reboot
+			break
+			;;
+	"Used Data By Users")
+			used_data
+			break
+			;;
+		"Quit")
+            break
+            ;;
+	 *) echo invalid option;;
+    esac
+done
